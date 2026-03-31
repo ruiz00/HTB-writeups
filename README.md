@@ -1,37 +1,114 @@
-# ruiz00.io — Security Research Blog
-
-> HTB writeups · Exploit development
-
-**Live site:** https://ruiz00.github.io
+Here is a **refactored and improved README.md** derived from your `index.html`, aligning documentation with the actual UI/UX, sections, and functionality of your site:
 
 ---
 
-## 🚀 Quick Start
+# ruiz00.io — Security Research Writeups 
 
-### Setup
-```bash
-git clone https://github.com/ruiz00/ruiz00.github.io
-cd ruiz00.github.io
+> HTB writeups · Penetration testing · Security research
+
+**Live site:** [https://ruiz00.github.io](https://ruiz00.github.io)
+
+---
+
+## 🧠 Overview
+
+This project is a **personal security research portfolio** showcasing:
+
+* HackTheBox (HTB) writeups
+* Exploit development notes
+* Offensive security skills progression
+* Public research and methodology
+
+The site is designed with a **terminal / cyberpunk aesthetic**, featuring dynamic UI elements like:
+
+* Matrix-style animated background
+* Glitch effects
+* Interactive filtering system
+* Live stats and skill tracking
+
+---
+
+## ⚙️ Features
+
+### 🔹 Hero Section
+
+* Terminal-style intro (`root@ruiz00:~$`)
+* Identity: *Security Researcher / Pentester*
+* Quick access to writeups and HTB profile
+
+### 🔹 About
+
+* Terminal-styled profile (`whoami.sh`)
+* Focus areas:
+
+  * Web Exploitation
+  * Reverse Engineering
+  * Active Directory
+  * Privilege Escalation
+  * OSINT, Crypto, Forensics
+
+### 🔹 Writeups System
+
+* Dynamic card-based layout
+* Filters:
+
+  * Difficulty (Easy → Insane)
+  * Search functionality
+* Metadata per writeup:
+
+  * OS (Linux/Windows)
+  * Tags (CVE, RCE, PrivEsc, etc.)
+  * Date
+* Example:
+
+  * *Kobold* → API RCE + Docker socket privilege escalation 
+
+### 🔹 Stats Dashboard
+
+Tracks progression:
+
+* Boxes Pwned
+* User / Root flags
+* HTB Points
+
+Includes:
+
+* Skill level bars
+* Rank progression system (e.g., Script Kiddie → …)
+
+### 🔹 Contact Section
+
+* GitHub
+* Twitter / X
+* HackTheBox profile
+* Optional PGP key block
+
+---
+
+## 🧩 Tech Stack
+
+### Frontend
+
+* HTML5 (single-page structure)
+* CSS3 (custom cyberpunk UI)
+* Vanilla JavaScript
+
+### Assets
+
+```
+assets/
+├── css/main.css
+├── js/
+│   ├── main.js
+│   └── matrix.js
 ```
 
-### Add a writeup (manual)
-1. Copy the template:
-```bash
-cp writeups/htb/_template.md writeups/htb/machine-name.md
-# or
-cp writeups/ctf/_template.md writeups/ctf/challenge-name.md
-```
-2. Edit the file with your writeup
-3. Run the build script locally:
-```bash
-pip install markdown pyyaml jinja2
-python scripts/build.py
-```
-4. Commit & push → CI/CD deploys automatically
+### Features Implemented in JS
 
-### Add a writeup (via GitHub Actions)
-Go to **Actions → New Writeup Helper → Run workflow**
-Fill in the form → scaffold file is created and committed automatically.
+* Typing animation
+* Matrix canvas rendering
+* Writeup filtering & search
+* Animated counters (stats)
 
 ---
 
@@ -39,56 +116,95 @@ Fill in the form → scaffold file is created and committed automatically.
 
 ```
 ruiz00.github.io/
-├── index.html                    # Main site
+├── index.html              # Main UI (SPA layout)
 ├── assets/
-│   ├── css/style.css             # All styles
+│   ├── css/
+│   │   └── main.css
 │   └── js/
-│       ├── main.js               # Site logic
-│       └── writeups-data.js      # Auto-generated writeup index
+│       ├── main.js
+│       └── matrix.js
 ├── writeups/
 │   ├── htb/
-│   │   ├── _template.md          # HTB writeup template
-│   │   └── *.md / *.html         # Your writeups (md=source, html=generated)
+│   └── ctf/
 ├── scripts/
-│   └── build.py                  # Markdown → HTML converter + data generator
-└── .github/
-    └── workflows/
-        ├── deploy.yml            # Auto-deploy on push to main
-        └── new-writeup.yml       # Scaffold new writeup via UI
+│   └── build.py            # Markdown → HTML generator
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml
+│       └── new-writeup.yml
 ```
 
 ---
 
-## 📝 Writeup Frontmatter Reference
+## ✍️ Writeups Workflow
 
-### HTB
-```yaml
----
-title: "Machine Name"
-type: htb
-difficulty: easy        # easy | medium | hard | insane
-os: Linux               # Linux | Windows | FreeBSD
-date: 2024-01-01
-points: 20
-tags: [samba, metasploit, CVE-2007-2447]
-summary: "One-line summary for the card view."
-retired: true           # true = machine is retired (safe to publish)
----
+### Manual
 
----
+```bash
+cp writeups/htb/_template.md writeups/htb/<machine>.md
+python scripts/build.py
+git commit -m "add writeup"
+git push
+```
 
-## ⚙️ GitHub Pages Setup
+### Automated (GitHub Actions)
 
-1. Go to **Settings → Pages**
-2. Source: **GitHub Actions**
-3. Push to `main` — the site deploys automatically
+* Go to **Actions → New Writeup Helper**
+* Fill the form
+* File is scaffolded and deployed automatically
 
 ---
 
-## 🔒 HTB Policy Reminder
+## 🔎 Writeup Format
 
-Only publish writeups for **retired machines**. Active machine writeups violate HTB ToS.
+Each writeup includes:
+
+* Title
+* Difficulty
+* OS
+* Tags (CVE, techniques)
+* Summary
+* Exploitation steps
+* Privilege escalation path
 
 ---
 
-*Built with ♦ and `nmap`*
+## 📊 Design Philosophy
+
+This project emphasizes:
+
+* **Clarity of exploitation steps**
+* **Minimal dependencies (no frameworks)**
+* **Performance-first frontend**
+* **Readable + searchable knowledge base**
+
+---
+
+## 🔒 Policy Reminder (HTB)
+
+Only publish writeups for:
+
+✔ Retired machines
+❌ Active machines (violates HTB ToS)
+
+---
+
+## 🚀 Deployment
+
+* Hosted via **GitHub Pages**
+* Auto-deploy on push to `main` via GitHub Actions
+
+---
+
+## 📬 Contact
+
+* GitHub: [https://github.com/ruiz00](https://github.com/ruiz00)
+* HTB: [https://app.hackthebox.com/profile/](https://app.hackthebox.com/profile/)
+* Twitter/X: [https://twitter.com/ruiz00](https://twitter.com/ruiz00)
+
+
+## 💡 Quote
+
+> “The quieter you become, the more you can hear.”
+
+
