@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Writeups — ruiz00</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <style>
+    .writeups-page { max-width: 1200px; margin: 0 auto; padding: 7rem 2rem 5rem; }
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.1em;
+    }
+    .page-sub {
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 3rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines"></div>
+  <canvas id="matrix-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="../index.html" style="text-decoration:none">
+        <span class="nav-bracket">[</span>
+        <span class="nav-logo glitch" data-text="ruiz00">ruiz00</span>
+        <span class="nav-bracket">]</span>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="../index.html#about" class="nav-link"><span class="nav-index">01.</span> about</a>
+      <a href="../index.html#writeups" class="nav-link"><span class="nav-index">02.</span> writeups</a>
+      <a href="../index.html#stats" class="nav-link"><span class="nav-index">03.</span> stats</a>
+      <a href="../index.html#contact" class="nav-link"><span class="nav-index">04.</span> contact</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span class="status-text">online</span>
+    </div>
+  </nav>
+
+  <main class="writeups-page">
+    <h1 class="page-title">All Writeups</h1>
+    <p class="page-sub">root@ruiz00:~/writeups$ ls -la --sort=date</p>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="htb">HackTheBox</button>
+      <button class="filter-btn" data-filter="ctf">CTF</button>
+      <button class="filter-btn" data-filter="easy">Easy</button>
+      <button class="filter-btn" data-filter="medium">Medium</button>
+      <button class="filter-btn" data-filter="hard">Hard</button>
+      <button class="filter-btn" data-filter="insane">Insane</button>
+      <div class="filter-search">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search-input" placeholder="search writeups..." class="search-input">
+      </div>
+    </div>
+
+    <div class="writeups-grid" id="writeups-grid">
+      <!-- Cards populated here — add your writeup cards below -->
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand"><span class="nav-bracket">[</span>ruiz00<span class="nav-bracket">]</span></div>
+      <p class="footer-copy">Built with ♥ | GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script src="../assets/js/matrix.js"></script>
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

