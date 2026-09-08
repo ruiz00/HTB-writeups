@@ -47,7 +47,7 @@
         <span class="hero-line accent">RESEARCHER</span>
       </h1>
       <div class="hero-desc">
-        <p>HTB Player // Aspiring Pentester</p>
+        <p>HTB Player // Pentester</p>
         <p class="hero-sub">Breaking machines. Writing reports. Sharing knowledge.</p>
       </div>
       <div class="hero-cta">
@@ -91,7 +91,7 @@
           <div class="terminal-body">
             <p><span class="t-key">name</span><span class="t-sep">:</span> <span class="t-val">ruiz00</span></p>
             <p><span class="t-key">role</span><span class="t-sep">:</span> <span class="t-val">Security Researcher</span></p>
-            <p><span class="t-key">focus</span><span class="t-sep">:</span> <span class="t-val">Web, Pwn, Reverse, AD, Misc</span></p>
+            <p><span class="t-key">focus</span><span class="t-sep">:</span> <span class="t-val">Web, Pwn, Reverse, Misc</span></p>
             <p><span class="t-key">platform</span><span class="t-sep">:</span> <span class="t-val">HackTheBox</span></p>
             <p><span class="t-key">location</span><span class="t-sep">:</span> <span class="t-val">// classified</span></p>
             <br>
@@ -101,6 +101,7 @@
       </div>
       <div class="skills-grid">
         <div class="skill-tag">Web Exploitation</div>
+        <div class="skill-tag">Binary Exploitation</div>
         <div class="skill-tag">Reverse Engineering</div>
         <div class="skill-tag">OSINT</div>
         <div class="skill-tag">Privilege Escalation</div>
@@ -134,6 +135,33 @@
 
     <div class="writeups-grid" id="writeups-grid">
 
+      <!-- ★ REACTOR ★ -->
+      <article class="writeup-card" data-category="htb" data-difficulty="medium">
+        <div class="card-header">
+          <div class="card-badge htb">HTB</div>
+          <div class="card-diff medium">Medium</div>
+          <div class="card-os"><span class="os-icon">🐧</span> Linux</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Reactor</h3>
+          <div class="card-tags">
+            <span class="tag">CVE-2025-55189</span>
+            <span class="tag">Next.js RCE</span>
+            <span class="tag">CDP Inspector</span>
+            <span class="tag">Node.js PrivEsc</span>
+          </div>
+          <p class="card-excerpt">
+            Next.js 15.0.3 CDP inspector exposure leads to RCE via react2shell.py. SQLite
+            database exfiltrated via base64, hash cracked, then root via Node.js --inspect on a root-owned process.
+          </p>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">2025</span>
+          <a href="writeups/htb/reactor.html" class="card-link">Read <span>→</span></a>
+        </div>
+      </article>
+
+      <!-- ★ KOBOLD ★ -->
       <article class="writeup-card" data-category="htb" data-difficulty="easy">
         <div class="card-header">
           <div class="card-badge htb">HTB</div>
@@ -158,36 +186,6 @@
           <a href="writeups/htb/kobold.html" class="card-link">Read <span>→</span></a>
         </div>
       </article>
-      <article class="writeup-card" data-category="htb" data-difficulty="easy">
-  <div class="card-header">
-    <div class="card-badge htb">HTB</div>
-    <div class="card-diff easy">Easy</div>
-    <div class="card-os"><span class="os-icon">🐧</span> Linux</div>
-  </div>
-
-  <div class="card-body">
-    <h3 class="card-title">Cap</h3>
-
-    <div class="card-tags">
-      <span class="tag">IDOR</span>
-      <span class="tag">PCAP</span>
-      <span class="tag">FTP</span>
-      <span class="tag">Credential Reuse</span>
-      <span class="tag">Linux Capabilities</span>
-      <span class="tag">PrivEsc</span>
-    </div>
-
-    <p class="card-excerpt">
-      Exploiting an IDOR vulnerability to access PCAP files, extract credentials,
-      gain FTP/SSH access, and escalate privileges using cap_setuid.
-    </p>
-  </div>
-
-  <div class="card-footer">
-    <span class="card-date">2024-09-26</span>
-    <a href="writeups/htb/cap.html" class="card-link">Read <span>→</span></a>
-  </div>
-</article>
 
     </div>
 
@@ -206,22 +204,22 @@
 
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value counter" data-target="36"></div>
+        <div class="stat-value counter" data-target="0">0</div>
         <div class="stat-label">Boxes Pwned</div>
         <div class="stat-bar"><div class="stat-fill" style="--fill: 0%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value counter" data-target="40">40</div>
+        <div class="stat-value counter" data-target="0">0</div>
         <div class="stat-label">User Flags</div>
         <div class="stat-bar"><div class="stat-fill" style="--fill: 0%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value counter" data-target="39">39</div>
+        <div class="stat-value counter" data-target="0">0</div>
         <div class="stat-label">Root Flags</div>
         <div class="stat-bar"><div class="stat-fill" style="--fill: 0%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value counter" data-target="15">15</div>
+        <div class="stat-value counter" data-target="0">0</div>
         <div class="stat-label">HTB Points</div>
         <div class="stat-bar"><div class="stat-fill" style="--fill: 0%"></div></div>
       </div>
@@ -232,13 +230,13 @@
       <h3 class="skills-levels-title">// Skill Levels</h3>
       <div class="skill-level-row">
         <span class="sl-name">Web Exploitation</span>
-        <div class="sl-bar"><div class="sl-fill" style="--fill: 40%"></div></div>
-        <span class="sl-pct">40%</span>
+        <div class="sl-bar"><div class="sl-fill" style="--fill: 0%"></div></div>
+        <span class="sl-pct">0%</span>
       </div>
       <div class="skill-level-row">
         <span class="sl-name">Privilege Escalation</span>
-        <div class="sl-bar"><div class="sl-fill" style="--fill: 25%"></div></div>
-        <span class="sl-pct">25%</span>
+        <div class="sl-bar"><div class="sl-fill" style="--fill: 0%"></div></div>
+        <span class="sl-pct">0%</span>
       </div>
       <div class="skill-level-row">
         <span class="sl-name">Reverse Engineering</span>
@@ -247,8 +245,8 @@
       </div>
       <div class="skill-level-row">
         <span class="sl-name">Active Directory</span>
-        <div class="sl-bar"><div class="sl-fill" style="--fill: 25%"></div></div>
-        <span class="sl-pct">25%</span>
+        <div class="sl-bar"><div class="sl-fill" style="--fill: 0%"></div></div>
+        <span class="sl-pct">0%</span>
       </div>
       <div class="skill-level-row">
         <span class="sl-name">Binary Exploitation</span>
@@ -256,17 +254,17 @@
         <span class="sl-pct">0%</span>
       </div>
       <div class="skill-level-row">
-        <span class="sl-name">Defensive</span>
-        <div class="sl-bar"><div class="sl-fill" style="--fill: 20%"></div></div>
+        <span class="sl-name">Cryptography</span>
+        <div class="sl-bar"><div class="sl-fill" style="--fill: 0%"></div></div>
         <span class="sl-pct">0%</span>
       </div>
     </div>
 
     <div class="rank-display">
       <div class="rank-label">Current Rank</div>
-      <div class="rank-value">Script Kiddie</div>
+      <div class="rank-value">—</div>
       <div class="rank-bar">
-        <div class="rank-fill" style="width: 12.5%"></div>
+        <div class="rank-fill" style="width: 0%"></div>
         <span class="rank-pct">0%</span>
       </div>
     </div>
