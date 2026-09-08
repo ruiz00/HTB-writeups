@@ -54,20 +54,70 @@
 
     <div class="filter-bar">
       <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="htb">HackTheBox</button>
-      <button class="filter-btn" data-filter="ctf">CTF</button>
       <button class="filter-btn" data-filter="easy">Easy</button>
       <button class="filter-btn" data-filter="medium">Medium</button>
       <button class="filter-btn" data-filter="hard">Hard</button>
       <button class="filter-btn" data-filter="insane">Insane</button>
       <div class="filter-search">
         <span class="search-icon">⌕</span>
-        <input type="text" id="search-input" placeholder="search writeups..." class="search-input">
+        <input type="text" id="search-input" placeholder="search machines…" class="search-input">
       </div>
     </div>
 
     <div class="writeups-grid" id="writeups-grid">
-      <!-- Cards populated here — add your writeup cards below -->
+
+      <!-- ★ REACTOR ★ -->
+      <article class="writeup-card" data-category="htb" data-difficulty="medium">
+        <div class="card-header">
+          <div class="card-badge htb">HTB</div>
+          <div class="card-diff medium">Medium</div>
+          <div class="card-os"><span class="os-icon">🐧</span> Linux</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Reactor</h3>
+          <div class="card-tags">
+            <span class="tag">CVE-2025-55189</span>
+            <span class="tag">Next.js RCE</span>
+            <span class="tag">CDP Inspector</span>
+            <span class="tag">Node.js PrivEsc</span>
+          </div>
+          <p class="card-excerpt">
+            Next.js 15.0.3 CDP inspector exposure leads to RCE via react2shell.py. SQLite
+            database exfiltrated via base64, hash cracked, then root via Node.js --inspect on a root-owned process.
+          </p>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">2025</span>
+          <a href="htb/reactor.html" class="card-link">Read <span>→</span></a>
+        </div>
+      </article>
+
+      <!-- ★ KOBOLD ★ -->
+      <article class="writeup-card" data-category="htb" data-difficulty="easy">
+        <div class="card-header">
+          <div class="card-badge htb">HTB</div>
+          <div class="card-diff easy">Easy</div>
+          <div class="card-os"><span class="os-icon">🐧</span> Linux</div>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Kobold</h3>
+          <div class="card-tags">
+            <span class="tag">CVE-2026-23520</span>
+            <span class="tag">RCE</span>
+            <span class="tag">Docker Socket</span>
+            <span class="tag">PrivEsc</span>
+          </div>
+          <p class="card-excerpt">
+            API endpoint exploitation via CVE-2026-23520 to gain a reverse shell as ben,
+            then abusing the Docker socket to mount the host filesystem and obtain root.
+          </p>
+        </div>
+        <div class="card-footer">
+          <span class="card-date">2026-03-24</span>
+          <a href="htb/kobold.html" class="card-link">Read <span>→</span></a>
+        </div>
+      </article>
+
     </div>
   </main>
 
